@@ -74,6 +74,7 @@ fn _make_clean<T: SourcePathProvider>(provider: &T) -> Result<(), Box<dyn Error>
     execute("make", &["clean"], &provider.source_dir()).map(|_| ())
 }
 
+#[cfg(test)]
 mod tests {
     use std::{
         env::temp_dir,
