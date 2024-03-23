@@ -21,16 +21,22 @@ impl SourcePathProvider for DefaultSourcePathProvider {
     }
 }
 
-pub const PNG_LIB_VERSION: &str = "1.6.43";
+/// Version of the `libpng` library
+pub const LIBPNG_VERSION: &str = "1.6.43";
 
+/// Returns the path to the `png.h` header file.
+/// Use it to generate binding to the `libpng` if needed.
 pub fn png_header_path() -> PathBuf {
     _png_header_path(&DefaultSourcePathProvider::new())
 }
 
+/// Statically compiles `libpng` library and returns the path to the compiled artifact.
 pub fn compile_lib() -> Result<PathBuf, Box<dyn Error>> {
     _compile_lib(&DefaultSourcePathProvider::new())
 }
 
+/// Cleans the build artifacts of the `libpng` library.
+/// Advised to do it before every new compilation.
 pub fn make_clean() -> Result<(), Box<dyn Error>> {
     _make_clean(&DefaultSourcePathProvider::new())
 }

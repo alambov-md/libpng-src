@@ -5,8 +5,11 @@ Helper cargo package for compiling [libpng](https://github.com/pnggroup/libpng) 
 Compiles `libpng` with version `1.6.43` without modifications. Original source code with license provided in `libpng` folder without any modifications.
 
 ## Currenlly supported OS and targets
-Expected to work for macOS (x86_64/arm64) and Linux (x86_64/arm64) without cross-compilation.
-Tested for following targets:
+Expected to work for:
+* Linux: `x86_64-unknown-linux-gnu`, `aarch64-unknown-linux-gnu`
+* macOS: `x86_64-apple-darwin`, `aarch64-apple-darwin`
+
+Tested before upload for:
 * `x86_64-unknown-linux-gnu`
 * `aarch64-apple-darwin`
 
@@ -18,3 +21,8 @@ Uses `make` and `libpng` provided shell scripts. Depends on `make` and `libpng`'
 * Support cross-compilation for mobile platforms (iOS/Android);
 * Support cross-compilation for macOS x86_64 at arm host and vice versa;
 * Support Windows;
+
+## Authors
+**Rust code and scripts:** Alexandr (Alex) Lambov <alex.lambov.md@gmail.com>, &copy; 2024
+
+**libpng** -  see http://www.libpng.org/pub/png/libpng.html
