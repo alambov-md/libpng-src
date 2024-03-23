@@ -27,8 +27,8 @@ pub fn compile_lib(target_str: &str, working_dir: &Path) -> Result<PathBuf, Box<
     cmake_args.push(source_path_str);
 
     cmake_setup(working_dir, &cmake_args)?;
-    make(&working_dir)?;
-    artifact_path(&working_dir)
+    make(working_dir)?;
+    artifact_path(working_dir)
 }
 
 fn allowed_targets_for_host() -> Vec<&'static str> {
@@ -82,7 +82,7 @@ fn macos_cmake_options(target_str: &str) -> Result<Vec<&str>, Box<dyn Error>> {
 
 fn cmake_setup(working_dir: &Path, args: &[&str]) -> Result<(), Box<dyn Error>> {
     if !working_dir.exists() {
-        std::fs::create_dir_all(&working_dir)?;
+        std::fs::create_dir_all(working_dir)?;
     }
 
     execute("cmake", args, working_dir)
