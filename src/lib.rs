@@ -42,7 +42,7 @@ fn execute(command: &str, args: &[&str], cwd: &Path) -> Result<String, Box<dyn E
         let message = format!(
             "Command '{}' failed with status code {}\nError: {}",
             command,
-            output.status,
+            output.status.code().unwrap_or(-1),
             String::from_utf8_lossy(&output.stderr)
         );
         return Err(message.into());
@@ -183,6 +183,6 @@ mod tests {
 
         execute("./configure", &[], &source_dir)?;
 
-        execute("make", &["check"], &source_dir).map(|_| ())
+        execute("make", &["test"], &source_dir).map(|_| ())
     }
 }

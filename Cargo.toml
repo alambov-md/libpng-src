@@ -10,3 +10,4 @@ rand = "*"
 
 [dev-dependencies]
 rand = "0.8"
+libz-sys = "1.1"
