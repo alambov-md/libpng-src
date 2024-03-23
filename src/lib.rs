@@ -1,5 +1,5 @@
 use std::{
-    env::consts::{OS as HOST_OS, ARCH as HOST_ARCH},
+    env::consts::{ARCH as HOST_ARCH, OS as HOST_OS},
     error::Error,
     path::{Path, PathBuf},
     process::Command,
@@ -17,7 +17,10 @@ pub fn source_path() -> PathBuf {
 /// Statically compiles `libpng` library and returns the path to the compiled artifact.
 pub fn compile_lib(target_str: &str, working_dir: &Path) -> Result<PathBuf, Box<dyn Error>> {
     if !allowed_targets_for_host().contains(&target_str) {
-        return Err(format!("Unsupported target: {target_str}, for host OS: {HOST_OS}, arch: {HOST_ARCH}").into());
+        return Err(format!(
+            "Unsupported target: {target_str}, for host OS: {HOST_OS}, arch: {HOST_ARCH}"
+        )
+        .into());
     }
 
     let source_path = source_path();
