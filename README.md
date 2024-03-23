@@ -6,20 +6,18 @@ Compiles `libpng` with version `1.6.43` without modifications. Original source c
 
 ## Currenlly supported OS and targets
 Expected to work for:
-* Linux: `x86_64-unknown-linux-gnu`, `aarch64-unknown-linux-gnu`
+* Linux: `x86_64-unknown-linux-gnu`, `aarch64-unknown-linux-gnu` (no cross-compilation supproted yet)
 * macOS: `x86_64-apple-darwin`, `aarch64-apple-darwin`
+* iOS, including simulators (cross-compilation from macOS host): `x86_64-apple-ios`, `aarch64-apple-ios`, `aarch64-apple-ios-sim`
 
-Tested before upload for:
-* `x86_64-unknown-linux-gnu`
-* `aarch64-apple-darwin`
+Tested before upload for all the targets, except `aarch64-unknown-linux-gnu`
 
-## Dependenencies
+## Compilation dependenencies
 Doesn't depend on any cargo packages for compilation.
-Uses `make` and `libpng` provided shell scripts. Depends on `make` and `libpng`'s `Makefile`, dependencies plus [zlib1g-dev](https://packages.debian.org/bullseye/zlib1g-dev) for compilation on Linux hosts. On macOS it uses `libz` which by default is present at macOS.
+Uses `cmake` and `make` provided shell scripts. Depends on `make` and `libpng`'s `Makefile`, dependencies plus [zlib1g-dev](https://packages.debian.org/bullseye/zlib1g-dev) for compilation on Linux hosts. On macOS and iOS it uses OS-vendored `libz`.
 
 ## TODO
-* Support cross-compilation for mobile platforms (iOS/Android);
-* Support cross-compilation for macOS x86_64 at arm host and vice versa;
+* Support cross-compilation for Android;
 * Support Windows;
 
 ## Authors

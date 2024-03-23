@@ -16,8 +16,6 @@ exclude = [
     "libpng/.travis.yml",
     "libpng/.yamllint.yml",
     "libpng/ci/",
-    "libpng/CMakeLists.txt",
-    "libpng/config.h",
     "libpng/example/",
     "libpng/projects/",
 ]
