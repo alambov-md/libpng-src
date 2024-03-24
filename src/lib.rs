@@ -1,5 +1,11 @@
 use std::{
-    env::consts::{ARCH as HOST_ARCH, OS as HOST_OS}, error::Error, ffi::OsString, fs, path::{Path, PathBuf}, process::Command, vec::Vec
+    env::consts::{ARCH as HOST_ARCH, OS as HOST_OS},
+    error::Error,
+    ffi::OsString,
+    fs,
+    path::{Path, PathBuf},
+    process::Command,
+    vec::Vec,
 };
 
 /// Version of the `libpng` library
@@ -32,9 +38,9 @@ pub fn compile_lib(target_str: &str, working_dir: &Path) -> Result<PathBuf, Box<
 
     execute("cmake", &cmake_args, working_dir)?;
     execute(
-        "cmake", 
-        &["--build", ".", "--config", "Release"].map(OsString::from), 
-        working_dir
+        "cmake",
+        &["--build", ".", "--config", "Release"].map(OsString::from),
+        working_dir,
     )?;
 
     artifact_path(working_dir)
@@ -90,11 +96,7 @@ fn macos_cmake_options(target_str: &str) -> Result<Vec<OsString>, Box<dyn Error>
         )
         .into()),
     }
-    .map(|str_vec|
-        str_vec.into_iter()
-            .map(OsString::from)
-            .collect()
-    )
+    .map(|str_vec| str_vec.into_iter().map(OsString::from).collect())
 }
 
 fn windows_cmake_options() -> Result<Vec<OsString>, Box<dyn Error>> {
@@ -111,7 +113,7 @@ fn windows_cmake_options() -> Result<Vec<OsString>, Box<dyn Error>> {
         include_param,
         lib_param,
         OsString::from("-DPNG_SHARED=OFF"),
-        OsString::from("-DPNG_TESTS=OFF")
+        OsString::from("-DPNG_TESTS=OFF"),
     ])
 }
 
@@ -170,7 +172,6 @@ mod tests {
         assert!(path.exists());
     }
 
-    
     #[cfg(not(target_os = "windows"))]
     #[test]
     fn test_execute_command_ok() -> Result<(), Box<dyn Error>> {
@@ -219,7 +220,6 @@ mod tests {
         let mut lib_param = OsString::from("-DZLIB_LIBRARY=");
         lib_param.push(zlib_lib_path);
 
-
         let cmake_args = [
             source_path.into_os_string(),
             include_param,
@@ -229,12 +229,15 @@ mod tests {
 
         execute("cmake", &cmake_args, &tmp_dir)?;
         execute(
-            "cmake", 
-            &["--build", ".", "--config", "Release"].map(OsString::from), 
-            &tmp_dir
+            "cmake",
+            &["--build", ".", "--config", "Release"].map(OsString::from),
+            &tmp_dir,
         )?;
 
-        copy(Path::new(env!("CARGO_MANIFEST_DIR")).join("win-zlib-test-helper/zlib.dll"), tmp_dir.join("zlib.dll"))?;
+        copy(
+            Path::new(env!("CARGO_MANIFEST_DIR")).join("win-zlib-test-helper/zlib.dll"),
+            tmp_dir.join("zlib.dll"),
+        )?;
         execute("ctest", &["-C", "Release"].map(OsString::from), &tmp_dir)?;
 
         remove_dir_all(&tmp_dir)?;
