@@ -1,4 +1,4 @@
-#![cfg(target_os = "linux")]
+#![cfg(target_os = "windows")]
 use libpng_src::compile_lib;
 
 use std::assert;
@@ -9,13 +9,13 @@ use temp_dir_helper::TempDirHelper;
 #[cfg(target_arch = "x86_64")]
 #[test]
 fn test_compile_x86_64() {
-    test_target("x86_64-unknown-linux-gnu")
+    test_target("x86_64-pc-windows-msvs")
 }
 
 #[cfg(target_arch = "aarch64")]
 #[test]
 fn test_compile_aarch64() {
-    test_target("aarch64-unknown-linux-gnu")
+    test_target("aarch64-pc-windows-msvs")
 }
 
 fn test_target(target: &str) {
