@@ -160,8 +160,7 @@ fn execute(command: &str, args: &[OsString], cwd: &Path) -> Result<(), Box<dyn E
 mod tests {
     use std::{
         env::temp_dir,
-        fs::{copy, create_dir_all, read_dir, remove_dir_all},
-        io,
+        fs::{copy, create_dir_all, remove_dir_all},
     };
 
     use super::*;
@@ -189,74 +188,47 @@ mod tests {
         assert!(execute("ls", &[OsString::from("non-existent-dir")], &temp_dir()).is_err())
     }
 
-    #[cfg(not(target_os = "windows"))]
-    #[test]
-    fn test_native() -> Result<(), Box<dyn Error>> {
-        let tmp_dir = temp_dir().join("libpng-sys-test");
-
-        copy_dir_all(source_path(), &tmp_dir)?;
-
-        execute("./configure", &[], &tmp_dir)?;
-        execute("make", &["test"], &tmp_dir)?;
-
-        remove_dir_all(&tmp_dir)?;
-
-        Ok(())
-    }
-
-    #[cfg(target_os = "windows")]
     #[test]
     fn test_native() -> Result<(), Box<dyn Error>> {
         let tmp_dir = temp_dir().join("libpng-sys-test");
         create_dir_all(&tmp_dir)?;
 
         let source_path = source_path();
-        let zlib_include_path = Path::new(env!("CARGO_MANIFEST_DIR")).join("win-zlib-include");
-        let zlib_lib_path = zlib_include_path.join("zlib.lib");
 
-        let mut include_param = OsString::from("-DZLIB_INCLUDE_DIR=");
-        include_param.push(&zlib_include_path);
-
-        let mut lib_param = OsString::from("-DZLIB_LIBRARY=");
-        lib_param.push(zlib_lib_path);
-
-        let cmake_args = [
+        let mut cmake_args = vec![
             source_path.into_os_string(),
-            include_param,
-            lib_param,
             OsString::from("-DPNG_TESTS=ON"),
         ];
+
+        if cfg!(target_os = "windows") {
+            let zlib_include_path = Path::new(env!("CARGO_MANIFEST_DIR")).join("win-zlib-include");
+            let zlib_lib_path = zlib_include_path.join("zlib.lib");
+    
+            let mut include_param = OsString::from("-DZLIB_INCLUDE_DIR=");
+            include_param.push(&zlib_include_path);
+    
+            let mut lib_param = OsString::from("-DZLIB_LIBRARY=");
+            lib_param.push(zlib_lib_path);
+
+            cmake_args.push(include_param);
+            cmake_args.push(lib_param);
+
+            copy(
+                Path::new(env!("CARGO_MANIFEST_DIR")).join("win-zlib-test-helper/zlib.dll"),
+                tmp_dir.join("zlib.dll"),
+            )?; 
+        }
 
         execute("cmake", &cmake_args, &tmp_dir)?;
         execute(
             "cmake",
-            &["--build", ".", "--config", "Release"].map(OsString::from),
+            &["--build", ".", "--config", "Debug"].map(OsString::from),
             &tmp_dir,
         )?;
-
-        copy(
-            Path::new(env!("CARGO_MANIFEST_DIR")).join("win-zlib-test-helper/zlib.dll"),
-            tmp_dir.join("zlib.dll"),
-        )?;
-        execute("ctest", &["-C", "Release"].map(OsString::from), &tmp_dir)?;
+        execute("ctest", &["-C", "Debug"].map(OsString::from), &tmp_dir)?;
 
         remove_dir_all(&tmp_dir)?;
 
-        Ok(())
-    }
-
-    #[allow(dead_code)]
-    fn copy_dir_all(src: impl AsRef<Path>, dst: impl AsRef<Path>) -> io::Result<()> {
-        create_dir_all(&dst)?;
-        for entry in read_dir(src)? {
-            let entry = entry?;
-            let ty = entry.file_type()?;
-            if ty.is_dir() {
-                copy_dir_all(entry.path(), dst.as_ref().join(entry.file_name()))?;
-            } else {
-                copy(entry.path(), dst.as_ref().join(entry.file_name()))?;
-            }
-        }
         Ok(())
     }
 }
