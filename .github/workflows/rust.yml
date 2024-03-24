@@ -10,13 +10,38 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  build:
+  test-linux:
 
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
 
     steps:
-    - uses: actions/checkout@v3
-    - name: Build
-      run: cargo build --verbose
+    - name: Checkout with submodules
+      uses: actions/checkout@v3
+      with:
+        submodules: recursive
     - name: Run tests
-      run: cargo test --verbose
+      run: cargo test
+
+  test-windows:
+
+    runs-on: windows-2019
+
+    steps:
+    - name: Checkout with submodules
+      uses: actions/checkout@v3
+      with:
+        submodules: recursive
+    - name: Run tests
+      run: cargo test
+
+  test-macos:
+
+    runs-on: macos-11
+
+    steps:
+    - name: Checkout with submodules
+      uses: actions/checkout@v3
+      with:
+        submodules: recursive
+    - name: Run tests
+      run: cargo test

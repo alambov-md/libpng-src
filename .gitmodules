@@ -1,0 +1,5 @@
+[submodule "libpng"]
+	path = libpng
+	url = https://github.com/pnggroup/libpng.git
+	ignore = all
+	branch = v1.6.43
