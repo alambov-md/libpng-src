@@ -9,6 +9,8 @@ repository = "https://github.com/alambov-md/libpng-src"
 exclude = [
     ".gitignore",
     ".gitmodules",
+    ".github/*",
+    "build/*",
     "libpng/.appveyor.yml",
     "libpng/.editorconfig",
     "libpng/.github/",
