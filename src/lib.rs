@@ -2,7 +2,7 @@ use std::{
     env::consts::{ARCH as HOST_ARCH, OS as HOST_OS},
     error::Error,
     ffi::OsString,
-    fs,
+    fs::{self, copy, create_dir, create_dir_all, remove_dir_all},
     path::{Path, PathBuf},
     process::Command,
     vec::Vec,
@@ -11,13 +11,160 @@ use std::{
 /// Version of the `libpng` library
 pub const LIBPNG_VERSION: &str = "1.6.43";
 
-/// Returns the path to the source directory.
+/// Represents result of complete building.
+pub struct Artifacts {
+    /// Artifacts root directory, see [build_all_artifacts](build_all_artifacts) for explanantion.
+    pub root_dir: PathBuf,
+    /// C headers directory, see [build_all_artifacts](build_all_artifacts) for explanantion.
+    pub include_dir: PathBuf,
+    /// Library search directory, see [build_all_artifacts](build_all_artifacts) for explanantion.
+    pub lib_dir: PathBuf,
+    /// Library name for linker.
+    pub link_name: String,
+}
+
+/// Returns the path to the source directory without any modifications.
+///
 /// Use it to generate bindings to the `libpng` if needed.
+/// The directory does not contain 'pnglibconf.h', generated at build time.
 pub fn source_path() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join("libpng")
 }
 
+/// Builds all artifacts and aggregates library and include headers in a directory.
+/// Would create working directory if missing.
+/// Would remove previous content of 'build/' and 'libpng/' subdirectories if not empty (see below).
+///
+/// # Example
+/// ```ignore
+/// // 'build.rs' of an another crate
+/// use std::{env::var, path::PathBuf};
+///
+/// use libpng_src::build_artifact;
+///
+/// fn main() {
+///     let target = var("TARGET").unwrap();
+///     let out_dir = var("OUT_DIR").map(PathBuf::from).unwrap();
+///
+///     let artifact_info = build_artifact(&target, &out_dir)
+///         .unwrap();
+///
+///     println!("cargo:rustc-link-search=native={}", artifact_info.lib_dir.to_string_lossy());
+///     println!("cargo:rustc-link-lib=static={}", artifact_info.link_name);
+/// }
+/// ```
+///
+/// # Example with bindgen
+/// ```ignore
+/// use std::{env::var, path::PathBuf};
+/// // 'build.rs' of an another crate
+///
+/// use bindgen;
+///
+/// use libpng_src::build_artifact;
+///
+/// fn main() {
+///     let target = var("TARGET").unwrap();
+///     let out_dir = var("OUT_DIR").map(PathBuf::from).unwrap();
+///
+///     let artifact_info = build_artifact(&target, &out_dir)
+///         .unwrap();
+///
+///     println!("cargo:rustc-link-search=native={}", artifact_info.lib_dir.to_string_lossy());
+///     println!("cargo:rustc-link-lib=static={}", artifact_info.link_name);
+///
+///     let main_header_path = artifact_info.include_dir.join("png.h");
+///
+///     bindgen::builder()
+///         .header(main_header_path.to_string_lossy())
+///         .allowlist_file(main_header_path.to_string_lossy())
+///         .generate()
+///         .unwrap()
+///         .write_to_file(out_dir.join("bindings.rs"))
+///         .unwrap()
+/// }
+/// ```
+///
+/// # File structure
+/// ```text
+/// working_directory/
+///     |->build/  ... Temporary build directory - do not use directly.
+///     └->libpng/ ... Artifact root directory.
+///         |->include/ ... C include headers - generate FFI bindings.
+///         └->lib/ ... Static library - add to link search path.
+/// ```
+pub fn build_artifact(target_str: &str, working_dir: &Path) -> Result<Artifacts, Box<dyn Error>> {
+    let build_dir = working_dir.join("build");
+
+    let library_path = compile_lib(target_str, &build_dir)?;
+    let library_filename = library_path
+        .file_name()
+        .map(|os| os.to_string_lossy())
+        .map(String::from)
+        .unwrap();
+
+    let root_dir = working_dir.join("libpng");
+
+    if root_dir.exists() {
+        remove_dir_all(&root_dir)?;
+    }
+
+    create_dir_all(&root_dir)?;
+
+    let include_dir = root_dir.join("include");
+
+    create_dir(&include_dir)?;
+    copy(source_path().join("png.h"), include_dir.join("png.h"))?;
+    copy(
+        source_path().join("pngconf.h"),
+        include_dir.join("pngconf.h"),
+    )?;
+    copy(
+        build_dir.join("pnglibconf.h"),
+        include_dir.join("pnglibconf.h"),
+    )?;
+
+    let lib_dir = root_dir.join("lib");
+
+    create_dir_all(&lib_dir)?;
+    copy(library_path, lib_dir.join(&library_filename))?;
+    // Cleanup
+    remove_dir_all(build_dir).map_or_else(
+        |_| println!("'libpng-src' cannot clean build directoey"),
+        |f| f,
+    );
+
+    Ok(Artifacts {
+        root_dir,
+        include_dir,
+        lib_dir,
+        link_name: link_name(library_filename),
+    })
+}
+
 /// Statically compiles `libpng` library and returns the path to the compiled artifact.
+/// Should be used when include headers are not needed.
+/// Would create working directory if missing, would remove its previous content if not empty.
+/// # Usage Example
+/// ```ignore
+/// /// 'build.rs' of a consumer crate
+/// use std::{env::var, fs::copy, path::PathBuf};
+///
+/// use libpng_src;
+///
+/// fn main() {
+///     let target = var("TARGET").unwrap();
+///     let out_dir = var("OUT_DIR").map(PathBuf::from).unwrap();
+///     
+///     let lib_path = libpng_src::compile_lib(&target, &out_dir).unwrap();
+///
+///     println!("cargo:rustc-link-search=native={}", lib_path.parent().unwrap().to_string_lossy());
+///     #[cfg(not(target_os = "windows"))]
+///     println!("cargo:rustc-link-lib=static=png16");
+///     #[cfg(target_os = "windows")]
+///     println!("cargo:rustc-link-lib=static=png16_static");
+/// }
+/// ```
 pub fn compile_lib(target_str: &str, working_dir: &Path) -> Result<PathBuf, Box<dyn Error>> {
     if !allowed_targets_for_host().contains(&target_str) {
         return Err(format!(
@@ -64,15 +211,28 @@ fn allowed_targets_for_host() -> Vec<&'static str> {
 }
 
 fn cmake_options(target_str: &str) -> Result<Vec<OsString>, Box<dyn Error>> {
-    match HOST_OS {
-        "macos" => macos_cmake_options(target_str),
-        "windows" => windows_cmake_options(),
+    let mut options = common_cmake_options();
+
+    let mut specific_options = match HOST_OS {
+        "macos" => macos_specific_cmake_options(target_str),
+        "windows" => windows_specific_cmake_options(),
         "linux" => Ok(vec![]),
         _ => Err(format!("Unsupported host OS: {}", HOST_OS).into()),
-    }
+    }?;
+
+    options.append(&mut specific_options);
+
+    Ok(options)
 }
 
-fn macos_cmake_options(target_str: &str) -> Result<Vec<OsString>, Box<dyn Error>> {
+fn common_cmake_options() -> Vec<OsString> {
+    vec![
+        OsString::from("-DPNG_SHARED=OFF"),
+        OsString::from("-DPNG_TESTS=OFF"),
+    ]
+}
+
+fn macos_specific_cmake_options(target_str: &str) -> Result<Vec<OsString>, Box<dyn Error>> {
     match target_str {
         "aarch64-apple-darwin" => Ok(vec!["-DCMAKE_OSX_ARCHITECTURES=arm64"]),
         "x86_64-apple-darwin" => Ok(vec!["-DCMAKE_OSX_ARCHITECTURES=x86_64"]),
@@ -96,10 +256,15 @@ fn macos_cmake_options(target_str: &str) -> Result<Vec<OsString>, Box<dyn Error>
         )
         .into()),
     }
+    .map(|mut str_vec| {
+        // Don't assemble the framework as it has no sense for Rust
+        str_vec.push("-DPNG_FRAMEWORK=OFF");
+        str_vec
+    })
     .map(|str_vec| str_vec.into_iter().map(OsString::from).collect())
 }
 
-fn windows_cmake_options() -> Result<Vec<OsString>, Box<dyn Error>> {
+fn windows_specific_cmake_options() -> Result<Vec<OsString>, Box<dyn Error>> {
     let zlib_include_path = Path::new(env!("CARGO_MANIFEST_DIR")).join("win-zlib-include");
     let zlib_lib_path = zlib_include_path.join("zlib.lib");
 
@@ -109,27 +274,7 @@ fn windows_cmake_options() -> Result<Vec<OsString>, Box<dyn Error>> {
     let mut lib_param = OsString::from("-DZLIB_LIBRARY=");
     lib_param.push(zlib_lib_path);
 
-    Ok(vec![
-        include_param,
-        lib_param,
-        OsString::from("-DPNG_SHARED=OFF"),
-        OsString::from("-DPNG_TESTS=OFF"),
-    ])
-}
-
-fn artifact_path(working_dir: &Path) -> Result<PathBuf, Box<dyn Error>> {
-    let filename = match HOST_OS {
-        "windows" => "Release\\libpng16_static.lib",
-        _ => "libpng16.a",
-    };
-
-    let artifact_path = working_dir.join(filename);
-
-    if !artifact_path.exists() {
-        return Err(format!("Artifact not found at path: {}", artifact_path.display()).into());
-    }
-
-    Ok(artifact_path)
+    Ok(vec![include_param, lib_param])
 }
 
 fn execute(command: &str, args: &[OsString], cwd: &Path) -> Result<(), Box<dyn Error>> {
@@ -156,79 +301,29 @@ fn execute(command: &str, args: &[OsString], cwd: &Path) -> Result<(), Box<dyn E
     Ok(())
 }
 
-#[cfg(test)]
-mod tests {
-    use std::{
-        env::temp_dir,
-        fs::{copy, create_dir_all, remove_dir_all},
+fn artifact_path(working_dir: &Path) -> Result<PathBuf, Box<dyn Error>> {
+    let filename = match HOST_OS {
+        "windows" => "Release\\libpng16_static.lib",
+        _ => "libpng16.a",
     };
 
-    use super::*;
+    let artifact_path = working_dir.join(filename);
 
-    #[test]
-    fn test_source_path() {
-        let path = source_path();
-        assert!(path.exists());
+    if !artifact_path.exists() {
+        return Err(format!("Artifact not found at path: {}", artifact_path.display()).into());
     }
 
-    #[cfg(not(target_os = "windows"))]
-    #[test]
-    fn test_execute_command_ok() -> Result<(), Box<dyn Error>> {
-        execute("echo", &[OsString::from("test")], &temp_dir())
-    }
-
-    #[cfg(target_os = "windows")]
-    #[test]
-    fn test_execute_command_ok() -> Result<(), Box<dyn Error>> {
-        execute("systeminfo", &[], &temp_dir())
-    }
-
-    #[test]
-    fn test_execute_command_fail() {
-        assert!(execute("ls", &[OsString::from("non-existent-dir")], &temp_dir()).is_err())
-    }
-
-    #[test]
-    fn test_native() -> Result<(), Box<dyn Error>> {
-        let tmp_dir = temp_dir().join("libpng-sys-test");
-        create_dir_all(&tmp_dir)?;
-
-        let source_path = source_path();
-
-        let mut cmake_args = vec![
-            source_path.into_os_string(),
-            OsString::from("-DPNG_TESTS=ON"),
-        ];
-
-        if cfg!(target_os = "windows") {
-            let zlib_include_path = Path::new(env!("CARGO_MANIFEST_DIR")).join("win-zlib-include");
-            let zlib_lib_path = zlib_include_path.join("zlib.lib");
-    
-            let mut include_param = OsString::from("-DZLIB_INCLUDE_DIR=");
-            include_param.push(&zlib_include_path);
-    
-            let mut lib_param = OsString::from("-DZLIB_LIBRARY=");
-            lib_param.push(zlib_lib_path);
-
-            cmake_args.push(include_param);
-            cmake_args.push(lib_param);
-
-            copy(
-                Path::new(env!("CARGO_MANIFEST_DIR")).join("win-zlib-test-helper/zlib.dll"),
-                tmp_dir.join("zlib.dll"),
-            )?; 
-        }
-
-        execute("cmake", &cmake_args, &tmp_dir)?;
-        execute(
-            "cmake",
-            &["--build", ".", "--config", "Debug"].map(OsString::from),
-            &tmp_dir,
-        )?;
-        execute("ctest", &["-C", "Debug"].map(OsString::from), &tmp_dir)?;
-
-        remove_dir_all(&tmp_dir)?;
-
-        Ok(())
-    }
+    Ok(artifact_path)
 }
+
+fn link_name(filename: String) -> String {
+    filename
+        .trim_start_matches("lib")
+        .split('.')
+        .next()
+        .map(String::from)
+        .unwrap()
+}
+
+#[cfg(test)]
+mod tests;

@@ -1,6 +1,6 @@
 [package]
 name = "libpng-src"
-version = "0.1.0"
+version = "0.2.0"
 authors = ["Alexandr Lambov <alex.lambov.md@gmail.com>"]
 edition = "2021"
 description = "Helper package for compiling 'libpng' as a static library. Meant to be used as build dependency only."
@@ -9,8 +9,9 @@ repository = "https://github.com/alambov-md/libpng-src"
 exclude = [
     ".gitignore",
     ".gitmodules",
-    ".github/*",
-    "build/*",
+    ".github/",
+    ".vscode/",
+    "build/",
     "libpng/.appveyor.yml",
     "libpng/.editorconfig",
     "libpng/.github/",
