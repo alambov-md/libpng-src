@@ -1,39 +1,54 @@
 #![cfg(target_os = "macos")]
-use libpng_src::compile_lib;
 
-use std::assert;
-
-mod temp_dir_helper;
-use temp_dir_helper::TempDirHelper;
+mod helpers;
+use helpers::{test_artifact_build, test_compile};
 
 #[test]
-fn test_compile_to_macos_intel() {
-    test_target("x86_64-apple-darwin")
+fn test_compile_for_macos_intel() {
+    test_compile("x86_64-apple-darwin")
 }
 
 #[test]
-fn test_compile_to_macos_arm() {
-    test_target("aarch64-apple-darwin")
+fn test_compile_for_macos_arm() {
+    test_compile("aarch64-apple-darwin")
 }
 
 #[test]
-fn test_compile_to_ios_arm() {
-    test_target("aarch64-apple-ios")
+fn test_compile_for_ios_arm() {
+    test_compile("aarch64-apple-ios")
 }
 
 #[test]
-fn test_compile_to_ios_arm_sim() {
-    test_target("aarch64-apple-ios-sim")
+fn test_compile_for_ios_arm_sim() {
+    test_compile("aarch64-apple-ios-sim")
 }
 
 #[test]
 fn test_compile_to_ios_intel_sim() {
-    test_target("x86_64-apple-ios")
+    test_compile("x86_64-apple-ios")
 }
 
-fn test_target(target: &str) {
-    let temp_helper = TempDirHelper::new();
+#[test]
+fn test_build_for_macos_intel() {
+    test_artifact_build("x86_64-apple-darwin")
+}
 
-    let art_path = compile_lib(target, &temp_helper.temp_dir()).unwrap();
-    assert!(art_path.is_file());
+#[test]
+fn test_build_for_macos_arm() {
+    test_artifact_build("aarch64-apple-darwin")
+}
+
+#[test]
+fn test_build_for_ios_arm() {
+    test_artifact_build("aarch64-apple-ios")
+}
+
+#[test]
+fn test_build_for_ios_arm_sim() {
+    test_artifact_build("aarch64-apple-ios-sim")
+}
+
+#[test]
+fn test_build_to_ios_intel_sim() {
+    test_artifact_build("x86_64-apple-ios")
 }
