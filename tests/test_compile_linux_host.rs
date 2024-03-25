@@ -1,10 +1,7 @@
 #![cfg(target_os = "linux")]
-use libpng_src::{build_all_artifacts, compile_lib};
-
-use std::assert;
 
 mod helpers;
-use helpers::{test_artifacts_build_and_bindgen, test_compile};
+use helpers::{test_artifact_build, test_compile};
 
 #[cfg(target_arch = "x86_64")]
 #[test]

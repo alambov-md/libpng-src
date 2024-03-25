@@ -11,7 +11,7 @@ Expected to work for:
 * macOS: `x86_64-apple-darwin`, `aarch64-apple-darwin`
 * iOS, including simulators (cross-compilation from macOS host): `x86_64-apple-ios`, `aarch64-apple-ios`, `aarch64-apple-ios-sim`
 
-Tested before upload for all the targets, except `aarch64-unknown-linux-gnu` and `aarch644-pc-windows-msvs`.
+Tested before upload for all the targets, except `aarch64-unknown-linux-gnu` and `aarch64-pc-windows-msvs`.
 
 ## Dependenencies for hosts
 Doesn't depend on any cargo packages for compilation.

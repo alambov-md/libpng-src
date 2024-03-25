@@ -31,8 +31,9 @@ pub fn source_path() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join("libpng")
 }
 
-/// Builds all aritfacts and aggregates library and include headers in a directory.
-/// Would create working directory if missing, would remove previous content of 'build/' and 'libpng/' subdirectories if not empty.
+/// Builds all artifacts and aggregates library and include headers in a directory.
+/// Would create working directory if missing.
+/// Would remove previous content of 'build/' and 'libpng/' subdirectories if not empty (see below).
 ///
 /// # Example
 /// ```ignore
@@ -44,36 +45,36 @@ pub fn source_path() -> PathBuf {
 /// fn main() {
 ///     let target = var("TARGET").unwrap();
 ///     let out_dir = var("OUT_DIR").map(PathBuf::from).unwrap();
-/// 
+///
 ///     let artifact_info = build_artifact(&target, &out_dir)
 ///         .unwrap();
-/// 
+///
 ///     println!("cargo:rustc-link-search=native={}", artifact_info.lib_dir.to_string_lossy());
 ///     println!("cargo:rustc-link-lib=static={}", artifact_info.link_name);
 /// }
 /// ```
-/// 
+///
 /// # Example with bindgen
 /// ```ignore
 /// use std::{env::var, path::PathBuf};
 /// // 'build.rs' of an another crate
-/// 
+///
 /// use bindgen;
-/// 
+///
 /// use libpng_src::build_artifact;
-/// 
+///
 /// fn main() {
 ///     let target = var("TARGET").unwrap();
 ///     let out_dir = var("OUT_DIR").map(PathBuf::from).unwrap();
-/// 
+///
 ///     let artifact_info = build_artifact(&target, &out_dir)
 ///         .unwrap();
-/// 
+///
 ///     println!("cargo:rustc-link-search=native={}", artifact_info.lib_dir.to_string_lossy());
 ///     println!("cargo:rustc-link-lib=static={}", artifact_info.link_name);
-/// 
+///
 ///     let main_header_path = artifact_info.include_dir.join("png.h");
-/// 
+///
 ///     bindgen::builder()
 ///         .header(main_header_path.to_string_lossy())
 ///         .allowlist_file(main_header_path.to_string_lossy())
@@ -83,7 +84,7 @@ pub fn source_path() -> PathBuf {
 ///         .unwrap()
 /// }
 /// ```
-/// 
+///
 /// # File structure
 /// ```text
 /// working_directory/
@@ -129,7 +130,7 @@ pub fn build_artifact(target_str: &str, working_dir: &Path) -> Result<Artifacts,
     copy(library_path, lib_dir.join(&library_filename))?;
     // Cleanup
     remove_dir_all(build_dir).map_or_else(
-        |_| println!("'libpng-src' cannot clean build directoty"),
+        |_| println!("'libpng-src' cannot clean build directoey"),
         |f| f,
     );
 
@@ -211,7 +212,7 @@ fn allowed_targets_for_host() -> Vec<&'static str> {
 
 fn cmake_options(target_str: &str) -> Result<Vec<OsString>, Box<dyn Error>> {
     let mut options = common_cmake_options();
-    
+
     let mut specific_options = match HOST_OS {
         "macos" => macos_specific_cmake_options(target_str),
         "windows" => windows_specific_cmake_options(),
@@ -255,11 +256,11 @@ fn macos_specific_cmake_options(target_str: &str) -> Result<Vec<OsString>, Box<d
         )
         .into()),
     }
-    .map(|mut str_vec| { 
-        // Don't assemble the framework as it has no sence for Rust
-        str_vec.push("-DPNG_FRAMEWORK=OFF"); 
+    .map(|mut str_vec| {
+        // Don't assemble the framework as it has no sense for Rust
+        str_vec.push("-DPNG_FRAMEWORK=OFF");
         str_vec
-    }) 
+    })
     .map(|str_vec| str_vec.into_iter().map(OsString::from).collect())
 }
 
@@ -273,10 +274,7 @@ fn windows_specific_cmake_options() -> Result<Vec<OsString>, Box<dyn Error>> {
     let mut lib_param = OsString::from("-DZLIB_LIBRARY=");
     lib_param.push(zlib_lib_path);
 
-    Ok(vec![
-        include_param,
-        lib_param,
-    ])
+    Ok(vec![include_param, lib_param])
 }
 
 fn execute(command: &str, args: &[OsString], cwd: &Path) -> Result<(), Box<dyn Error>> {
