@@ -1,8 +1,8 @@
-//! Helper Cargo package for compiling [libpng](https://github.com/pnggroup/libpng) into a static C library. 
-//! 
-//! Meant to be used as build dependency for dufferent `-sys` or `-vendored` packages. 
+//! Helper Cargo package for compiling [libpng](https://github.com/pnggroup/libpng) into a static C library.
+//!
+//! Meant to be used as build dependency for dufferent `-sys` or `-vendored` packages.
 //! Does not provide directly usable `libpng` functionality or bindings.
-//! 
+//!
 //! Expected to work for:
 //! - Linux: `x86_64-unknown-linux-gnu`, `aarch64-unknown-linux-gnu` (no cross-compilation supported yet)
 //! - Windows: `x86_64-pc-windows-msvs`, `aarch644-pc-windows-msvs` (no cross-compilation supported yet)
@@ -327,13 +327,13 @@ fn artifact_path(working_dir: &Path) -> Result<PathBuf, Box<dyn Error>> {
     Ok(artifact_path)
 }
 
-fn link_name(filename: String) -> String {
-    filename
-        .trim_start_matches("lib")
-        .split('.')
-        .next()
-        .map(String::from)
-        .unwrap()
+fn link_name(file_name: String) -> String {
+    let file_name = file_name.split('.').next().unwrap();
+
+    #[cfg(not(target_os = "windows"))]
+    let file_name = file_name.trim_start_matches("lib");
+
+    file_name.to_string()
 }
 
 #[cfg(test)]
