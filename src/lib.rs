@@ -1,3 +1,14 @@
+//! Helper Cargo package for compiling [libpng](https://github.com/pnggroup/libpng) into a static C library. 
+//! 
+//! Meant to be used as build dependency for dufferent `-sys` or `-vendored` packages. 
+//! Does not provide directly usable `libpng` functionality or bindings.
+//! 
+//! Expected to work for:
+//! - Linux: `x86_64-unknown-linux-gnu`, `aarch64-unknown-linux-gnu` (no cross-compilation supported yet)
+//! - Windows: `x86_64-pc-windows-msvs`, `aarch644-pc-windows-msvs` (no cross-compilation supported yet)
+//! - macOS: `x86_64-apple-darwin`, `aarch64-apple-darwin`
+//! - iOS, including simulators (cross-compilation from macOS host): `x86_64-apple-ios`, `aarch64-apple-ios`, `aarch64-apple-ios-sim`
+
 use std::{
     env::consts::{ARCH as HOST_ARCH, OS as HOST_OS},
     error::Error,
