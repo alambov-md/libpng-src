@@ -84,7 +84,7 @@ fn test_link_name() {
         assert_combination("libpng_static.lib", "libpng_static");
         assert_combination("libpng16_static.lib", "libpng16_static");
     } else {
-        assert_combination("libpng.a", "lipng");
+        assert_combination("libpng.a", "png");
         assert_combination("libpng.16.a", "png");
         assert_combination("libpng16.a", "png16");
     }
