@@ -74,15 +74,18 @@ fn test_native() -> Result<(), Box<dyn Error>> {
 
 #[test]
 fn test_link_name() {
-    let assert_combination = |filename: &str, expectation: &str| {
-        assert_eq!(link_name(filename.to_string()), expectation.to_string())
+    let assert_combination = |file_name: &str, expectation: &str| {
+        assert_eq!(link_name(file_name.to_string()), expectation.to_string())
     };
 
-    assert_combination("libpng.a", "png");
-    assert_combination("libpng.16.a", "png");
-    assert_combination("libpng16.a", "png16");
-    assert_combination("libpng.lib", "png");
-    assert_combination("libpng16.lib", "png16");
-    assert_combination("libpng_static.lib", "png_static");
-    assert_combination("libpng16_static.lib", "png16_static");
+    if cfg!(target_os = "windows") {
+        assert_combination("libpng.lib", "libpng");
+        assert_combination("libpng16.lib", "libpng16");
+        assert_combination("libpng_static.lib", "libpng_static");
+        assert_combination("libpng16_static.lib", "libpng16_static");
+    } else {
+        assert_combination("libpng.a", "lipng");
+        assert_combination("libpng.16.a", "png");
+        assert_combination("libpng16.a", "png16");
+    }
 }
