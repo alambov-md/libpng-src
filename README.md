@@ -37,7 +37,7 @@ Invoke Cargo via Developer Powershell or Developer Command Prompt for correct wo
 * `zlib` - vendored by OS
 
 ### Testing
-One of the unit tests invokes CTest (aprt of CMake) under the hood for testing native code.
+One of the unit tests invokes CTest (part of CMake) under the hood for testing native code.
 
 ## TODO
 * Support cross-compilation for Android;
