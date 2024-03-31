@@ -1,6 +1,6 @@
 [package]
 name = "libpng-src"
-version = "0.2.1"
+version = "0.2.2"
 authors = ["Alexandr Lambov <alex.lambov.md@gmail.com>"]
 edition = "2021"
 description = "Helper package for compiling 'libpng' as a static library. Meant to be used as build dependency only."
